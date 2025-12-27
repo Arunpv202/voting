@@ -1,19 +1,57 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
-  ArrowLeft, 
-  PlusCircle, 
-  User, 
-  FileText, 
-  Fingerprint, 
-  ArrowRight 
+import {
+  ArrowLeft,
+  PlusCircle,
+  User,
+  FileText,
+  Fingerprint,
+  ArrowRight
 } from "lucide-react";
 
 export default function CreateElection() {
   const navigate = useNavigate();
+  const [formData, setFormData] = useState({
+    creator_name: "",
+    election_name: "",
+    election_id: "",
+  });
+  const [loading, setLoading] = useState(false);
 
-  const handleNext = () => {
-    navigate("/admin/register-users");
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleNext = async () => {
+    setLoading(true);
+    try {
+      const wallet_address = localStorage.getItem("wallet");
+      const payload = { ...formData, wallet_address };
+
+      const response = await fetch("http://localhost:4000/api/elections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        // Pass election_id to next page or store in context/localstorage
+        // specific to this flow. For now, we can pass via navigation state if needed,
+        // or just let the user re-enter it (as per UI design).
+        // Let's store in localStorage for convenience in this session
+        localStorage.setItem("current_election_id", formData.election_id);
+        navigate("/admin/register-users");
+      } else {
+        const error = await response.json();
+        alert("Error: " + error.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to create election.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -22,13 +60,13 @@ export default function CreateElection() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]" />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-lg"
       >
         {/* Navigation Control */}
-        <button 
+        <button
           onClick={() => navigate("/admin/dashboard")}
           className="flex items-center gap-2 text-gray-500 hover:text-white mb-8 transition-all group"
         >
@@ -53,8 +91,11 @@ export default function CreateElection() {
               <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500 mb-2 ml-1">Creator Name</label>
               <div className="relative">
                 <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-indigo-400 transition-colors" size={20} />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
+                  name="creator_name"
+                  value={formData.creator_name}
+                  onChange={handleChange}
                   placeholder="Enter your name"
                   className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all placeholder:text-gray-700 font-medium"
                 />
@@ -66,8 +107,11 @@ export default function CreateElection() {
               <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500 mb-2 ml-1">Election Name</label>
               <div className="relative">
                 <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-indigo-400 transition-colors" size={20} />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
+                  name="election_name"
+                  value={formData.election_name}
+                  onChange={handleChange}
                   placeholder="e.g. Student Council 2024"
                   className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all placeholder:text-gray-700 font-medium"
                 />
@@ -79,8 +123,11 @@ export default function CreateElection() {
               <label className="block text-xs font-bold uppercase tracking-[0.2em] text-gray-500 mb-2 ml-1">Election ID</label>
               <div className="relative">
                 <Fingerprint className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-indigo-400 transition-colors" size={20} />
-                <input 
-                  type="text" 
+                <input
+                  type="text"
+                  name="election_id"
+                  value={formData.election_id}
+                  onChange={handleChange}
                   placeholder="Unique ID or Reference"
                   className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all placeholder:text-gray-700 font-medium"
                 />
@@ -91,10 +138,15 @@ export default function CreateElection() {
           {/* Action Button */}
           <button
             onClick={handleNext}
-            className="w-full mt-12 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-3 group"
+            disabled={loading}
+            className="w-full mt-12 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-3 group disabled:opacity-50"
           >
-            <span>Next: Register Users</span>
-            <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+            {loading ? "Creating..." : (
+              <>
+                <span>Next: Register Users</span>
+                <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+              </>
+            )}
           </button>
         </div>
 

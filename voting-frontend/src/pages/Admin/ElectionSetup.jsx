@@ -1,19 +1,99 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
-  ArrowLeft, 
-  Settings, 
-  User, 
-  Image as ImageIcon, 
-  Flag, 
-  AlignLeft, 
-  Calendar, 
+import {
+  ArrowLeft,
+  Settings,
+  User,
+  Image as ImageIcon,
+  Flag,
+  AlignLeft,
+  Calendar,
   CheckCircle,
-  Plus
+  Plus,
+  Trash2
 } from "lucide-react";
 
 export default function ElectionSetup() {
   const navigate = useNavigate();
+  const [electionId, setElectionId] = useState("");
+  const [candidates, setCandidates] = useState([]);
+  const [newCandidate, setNewCandidate] = useState({ candidate_name: "", symbol_name: "" });
+  const [timings, setTimings] = useState({ start_time: "", end_time: "", result_time: "" });
+  const [authorities, setAuthorities] = useState([]);
+  const [newAuthority, setNewAuthority] = useState({ name: "", wallet_address: "" });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const savedId = localStorage.getItem("current_election_id");
+    if (savedId) setElectionId(savedId);
+  }, []);
+
+  const handleAddCandidate = () => {
+    if (newCandidate.candidate_name && newCandidate.symbol_name) {
+      setCandidates([...candidates, newCandidate]);
+      setNewCandidate({ candidate_name: "", symbol_name: "" });
+    }
+  };
+
+  const handleAddAuthority = () => {
+    if (newAuthority.wallet_address) {
+      setAuthorities([...authorities, newAuthority]);
+      setNewAuthority({ name: "", wallet_address: "" });
+    }
+  };
+
+  const handleAddAdminAsAuthority = () => {
+    const adminWallet = localStorage.getItem("wallet");
+    if (!adminWallet) {
+      alert("No wallet connected found in local storage.");
+      return;
+    }
+    setAuthorities([...authorities, { name: "Admin (Me)", wallet_address: adminWallet }]);
+  };
+
+  const handleCompleteSetup = async () => {
+    if (!electionId) { alert("Election ID missing"); return; }
+    setLoading(true);
+    try {
+      // 1. Setup election details (candidates, times)
+      const setupRes = await fetch("http://localhost:4000/api/elections/setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          election_id: electionId,
+          candidates,
+          start_time: timings.start_time,
+          end_time: timings.end_time,
+          result_time: timings.result_time,
+
+          authorities: authorities
+        }),
+      });
+
+      if (!setupRes.ok) throw new Error("Failed to setup details");
+
+      // 2. Complete setup and start timer
+      const completeRes = await fetch("http://localhost:4000/api/elections/complete-setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ election_id: electionId }),
+      });
+
+      if (completeRes.ok) {
+        alert("Election setup complete! Registration window open for 2 minutes.");
+        navigate("/admin/view-elections");
+      } else {
+        throw new Error("Failed to complete setup");
+      }
+
+    } catch (err) {
+      console.error(err);
+      alert("Error: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#020617] text-white flex items-center justify-center p-6 relative overflow-hidden font-sans">
@@ -21,13 +101,13 @@ export default function ElectionSetup() {
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/10 rounded-full blur-[120px]" />
       <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/10 rounded-full blur-[120px]" />
 
-      <motion.div 
+      <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-2xl"
       >
         {/* Navigation */}
-        <button 
+        <button
           onClick={() => navigate("/admin/register-users")}
           className="flex items-center gap-2 text-gray-500 hover:text-white mb-6 transition-all group"
         >
@@ -44,6 +124,13 @@ export default function ElectionSetup() {
             <div>
               <h2 className="text-3xl font-black tracking-tight">Election Setup</h2>
               <p className="text-gray-400 text-sm">Configure candidates and voting schedule.</p>
+              <input
+                type="text"
+                value={electionId}
+                onChange={(e) => setElectionId(e.target.value)}
+                className="mt-2 bg-transparent border-b border-white/20 text-xs text-indigo-300 w-full outline-none"
+                placeholder="Confirm Election ID"
+              />
             </div>
           </div>
 
@@ -51,68 +138,128 @@ export default function ElectionSetup() {
             {/* SECTION 1: CANDIDATE INFO */}
             <section className="space-y-4">
               <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400 ml-1">Candidate Details</h3>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="group">
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-indigo-400 transition-colors" size={18} />
-                    <input type="text" placeholder="Candidate Name" className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:border-indigo-500/50 transition-all font-medium" />
+                    <input
+                      type="text"
+                      value={newCandidate.candidate_name}
+                      onChange={(e) => setNewCandidate({ ...newCandidate, candidate_name: e.target.value })}
+                      placeholder="Candidate Name"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:border-indigo-500/50 transition-all font-medium"
+                    />
                   </div>
                 </div>
                 <div className="group">
                   <div className="relative">
                     <Flag className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-indigo-400 transition-colors" size={18} />
-                    <input type="text" placeholder="Symbol Name" className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:border-indigo-500/50 transition-all font-medium" />
+                    <input
+                      type="text"
+                      value={newCandidate.symbol_name}
+                      onChange={(e) => setNewCandidate({ ...newCandidate, symbol_name: e.target.value })}
+                      placeholder="Symbol Name"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:border-indigo-500/50 transition-all font-medium"
+                    />
                   </div>
                 </div>
               </div>
 
-              {/* Uploads Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="relative border border-dashed border-white/10 rounded-xl p-4 bg-black/20 hover:border-indigo-500/50 transition-all text-center group cursor-pointer">
-                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white/5 rounded-lg text-gray-500 group-hover:text-indigo-400"><ImageIcon size={20} /></div>
-                    <span className="text-xs font-medium text-gray-400">Upload Photo</span>
-                  </div>
-                </div>
-                <div className="relative border border-dashed border-white/10 rounded-xl p-4 bg-black/20 hover:border-indigo-500/50 transition-all text-center group cursor-pointer">
-                  <input type="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-white/5 rounded-lg text-gray-500 group-hover:text-indigo-400"><Flag size={20} /></div>
-                    <span className="text-xs font-medium text-gray-400">Upload Symbol</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="relative group">
-                <AlignLeft className="absolute left-4 top-4 text-gray-600 group-focus-within:text-indigo-400 transition-colors" size={18} />
-                <textarea placeholder="Election Description" className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 h-24 outline-none focus:border-indigo-500/50 transition-all resize-none" />
-              </div>
-
-              <button className="w-full py-3 bg-emerald-600/20 border border-emerald-600/30 text-emerald-400 hover:bg-emerald-600 hover:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2">
+              <button
+                onClick={handleAddCandidate}
+                className="w-full py-3 bg-emerald-600/20 border border-emerald-600/30 text-emerald-400 hover:bg-emerald-600 hover:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+              >
                 <Plus size={18} /> Add Candidate to List
               </button>
+
+              {/* Added Candidates List */}
+              {candidates.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  {candidates.map((c, i) => (
+                    <div key={i} className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
+                      <span className="text-sm font-medium text-gray-300">{c.candidate_name} ({c.symbol_name})</span>
+                      <Trash2 size={16} className="text-red-400 cursor-pointer" onClick={() => setCandidates(candidates.filter((_, idx) => idx !== i))} />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+
+            <section className="space-y-4 border-t border-white/5 pt-4">
+              <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400 ml-1">Authority Setup</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="group">
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 transition-colors" size={18} />
+                    <input
+                      type="text"
+                      value={newAuthority.name}
+                      onChange={(e) => setNewAuthority({ ...newAuthority, name: e.target.value })}
+                      placeholder="Authority Name (Optional)"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:border-indigo-500/50 transition-all font-medium"
+                    />
+                  </div>
+                </div>
+                <div className="group">
+                  <div className="relative">
+                    <Settings className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-600 transition-colors" size={18} />
+                    <input
+                      type="text"
+                      value={newAuthority.wallet_address}
+                      onChange={(e) => setNewAuthority({ ...newAuthority, wallet_address: e.target.value })}
+                      placeholder="Authority Wallet Address (0x...)"
+                      className="w-full bg-black/40 border border-white/10 rounded-xl py-4 pl-12 pr-4 outline-none focus:border-indigo-500/50 transition-all font-medium font-mono text-sm"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={handleAddAuthority}
+                className="w-full py-3 bg-indigo-600/20 border border-indigo-600/30 text-indigo-400 hover:bg-indigo-600 hover:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 mb-2"
+              >
+                <Plus size={18} /> Add Authority
+              </button>
+              <button
+                onClick={handleAddAdminAsAuthority}
+                className="w-full py-3 bg-purple-600/20 border border-purple-600/30 text-purple-400 hover:bg-purple-600 hover:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                <User size={18} /> Add Myself (Admin)
+              </button>
+
+              {/* Added Authorities List */}
+              {authorities.length > 0 && (
+                <div className="space-y-2 mt-4">
+                  {authorities.map((a, i) => (
+                    <div key={i} className="flex justify-between items-center p-3 bg-white/5 rounded-lg border border-white/5">
+                      <span className="text-sm font-medium text-gray-300">{a.name ? `${a.name} ` : "Authority "}({a.wallet_address})</span>
+                      <Trash2 size={16} className="text-red-400 cursor-pointer" onClick={() => setAuthorities(authorities.filter((_, idx) => idx !== i))} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* SECTION 2: TIMELINE */}
             <section className="space-y-4 pt-4 border-t border-white/5">
               <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-indigo-400 ml-1">Election Timeline</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <DateInput label="Start Date" />
-                <DateInput label="End Date" />
-                <DateInput label="Results Date" />
+                <DateInput label="Start Date" value={timings.start_time} onChange={(v) => setTimings({ ...timings, start_time: v })} />
+                <DateInput label="End Date" value={timings.end_time} onChange={(v) => setTimings({ ...timings, end_time: v })} />
+                <DateInput label="Results Date" value={timings.result_time} onChange={(v) => setTimings({ ...timings, result_time: v })} />
               </div>
             </section>
           </div>
 
           {/* COMPLETE BUTTON */}
           <button
-            onClick={() => navigate("/admin/view-elections")}
-            className="w-full mt-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
+            onClick={handleCompleteSetup}
+            disabled={loading}
+            className="w-full mt-10 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <CheckCircle size={20} />
-            <span>Complete Election Setup</span>
+            <span>{loading ? "Starting Registration (2 min timer)..." : "Complete Election Setup"}</span>
           </button>
         </div>
 
@@ -125,13 +272,18 @@ export default function ElectionSetup() {
 }
 
 // Helper Component for Date Inputs
-function DateInput({ label }) {
+function DateInput({ label, value, onChange }) {
   return (
     <div className="group">
       <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1.5 ml-1">{label}</label>
       <div className="relative">
         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-600 group-focus-within:text-indigo-400 transition-colors" size={14} />
-        <input type="date" className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-9 pr-3 text-xs outline-none focus:border-indigo-500/50 transition-all [color-scheme:dark]" />
+        <input
+          type="datetime-local"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-9 pr-3 text-xs outline-none focus:border-indigo-500/50 transition-all [color-scheme:dark]"
+        />
       </div>
     </div>
   );

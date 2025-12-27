@@ -2,13 +2,18 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 
 import Landing from "./pages/Landing";
 import ConnectWallet from "./pages/ConnectWallet";
-
+import BlockchainExplorer from "./pages/BlockchainExplorer.jsx";
+import GenerateKey from "./pages/GenerateKey";
 /* ================= ADMIN ================= */
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import CreateElection from "./pages/Admin/CreateElection";
 import RegisterUsers from "./pages/Admin/RegisterUsers";
 import ElectionSetup from "./pages/Admin/ElectionSetup";
 import ViewElections from "./pages/Admin/ViewElections";
+
+/* ================= AUTHORITY ================= */
+import EnterDKG from "./pages/Authority/EnterDKG";
+import DKGDashboard from "./pages/Authority/DKG/DKGDashboard";
 
 /* ================= USER ================= */
 import UserDashboard from "./pages/User/UserDashboard";
@@ -26,6 +31,7 @@ function App() {
         {/* -------- Public -------- */}
         <Route path="/" element={<Landing />} />
         <Route path="/connect-wallet" element={<ConnectWallet />} />
+        <Route path="/generate-key" element={<GenerateKey />} />
 
         {/* -------- Admin -------- */}
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -33,6 +39,12 @@ function App() {
         <Route path="/admin/register-users" element={<RegisterUsers />} />
         <Route path="/admin/election-setup" element={<ElectionSetup />} />
         <Route path="/admin/view-elections" element={<ViewElections />} />
+        <Route path="/admin/view-elections" element={<ViewElections />} />
+        <Route path="/admin/blockchain-explorer/:electionId" element={<BlockchainExplorer />} />
+
+        {/* -------- Authority -------- */}
+        <Route path="/authority/enter" element={<EnterDKG />} />
+        <Route path="/authority/dkg/:electionId" element={<DKGDashboard />} />
 
         {/* -------- User -------- */}
         <Route path="/user/dashboard" element={<UserDashboard />} />

@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
-  UserCircle, 
-  Key, 
-  Vote, 
-  LogOut, 
-  ArrowRight, 
+import {
+  UserCircle,
+  Key,
+  Vote,
+  LogOut,
+  ArrowRight,
   ShieldCheck,
   Globe
 } from "lucide-react";
@@ -28,13 +28,13 @@ export default function UserDashboard() {
           </div>
           <span className="font-bold tracking-tight text-xl">Voter Portal</span>
         </div>
-        
+
         <div className="flex items-center gap-4">
           <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full">
             <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
             <span className="text-[10px] font-mono text-gray-400">{walletAddress}</span>
           </div>
-          <button 
+          <button
             onClick={() => navigate("/")}
             className="p-2 text-gray-400 hover:text-red-400 transition-colors"
           >
@@ -45,7 +45,7 @@ export default function UserDashboard() {
 
       {/* Main Content */}
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center p-6">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center mb-12"
@@ -73,6 +73,13 @@ export default function UserDashboard() {
             icon={<Globe size={32} />}
             onClick={() => navigate("/user/existing-elections")}
             color="emerald"
+          />
+          <DashboardCard
+            title="DKG Access"
+            desc="Participate in the Distributed Key Generation process."
+            icon={<ShieldCheck size={32} />}
+            onClick={() => navigate("/authority/enter")}
+            color="red"
           />
         </div>
       </main>
@@ -102,20 +109,18 @@ function DashboardCard({ title, desc, icon, onClick, color }) {
       className="group cursor-pointer relative p-1 rounded-[2rem] bg-gradient-to-b from-white/10 to-transparent hover:from-white/20 transition-all duration-500 shadow-2xl"
     >
       <div className="bg-[#0f172a]/90 backdrop-blur-xl p-8 rounded-[1.9rem] h-full flex flex-col items-start text-left">
-        <div className={`mb-6 p-4 rounded-2xl transition-all duration-300 ${
-          isIndigo 
-          ? "bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]" 
+        <div className={`mb-6 p-4 rounded-2xl transition-all duration-300 ${isIndigo
+          ? "bg-indigo-500/10 text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
           : "bg-emerald-500/10 text-emerald-400 group-hover:bg-emerald-600 group-hover:text-white group-hover:shadow-[0_0_20px_rgba(16,185,129,0.4)]"
-        }`}>
+          }`}>
           {icon}
         </div>
-        
+
         <h2 className="text-2xl font-bold mb-3 group-hover:text-white transition-colors">{title}</h2>
         <p className="text-gray-400 text-sm leading-relaxed mb-8 flex-1">{desc}</p>
-        
-        <div className={`flex items-center gap-2 font-bold text-xs uppercase tracking-widest transition-all ${
-          isIndigo ? "text-indigo-400 group-hover:text-indigo-300" : "text-emerald-400 group-hover:text-emerald-300"
-        }`}>
+
+        <div className={`flex items-center gap-2 font-bold text-xs uppercase tracking-widest transition-all ${isIndigo ? "text-indigo-400 group-hover:text-indigo-300" : "text-emerald-400 group-hover:text-emerald-300"
+          }`}>
           <span>Access Portal</span>
           <ArrowRight size={16} className="group-hover:translate-x-2 transition-transform" />
         </div>
